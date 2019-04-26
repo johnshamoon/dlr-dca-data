@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from pytz import timezone
 import json
+import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 import sys
