@@ -106,7 +106,7 @@ class Park():
 
     def write_wait_times(self, current_wait_times=None):
         # Get today's date. Will make a new file every day.
-        file_name = datetime.now(timezone('America/Los_Angeles')).strftime('%m-%d-%Y') + '.json'
+        file_name = 'data/' + datetime.now(timezone('America/Los_Angeles')).strftime('%m-%d-%Y') + '.json'
         data = open(file_name, 'a')
         if not current_wait_times:
             current_wait_times = self.get_wait_times()
