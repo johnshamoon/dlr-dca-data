@@ -98,8 +98,13 @@ class Park():
                 if ride not in times.keys():
                     times[ride] = 0
 
-            # Add 24-hour timestamp (PST).
-            times['time'] = datetime.now(timezone('America/Los_Angeles')).strftime('%H:%M:%S')
+            time = datetime.now(timezone('America/Los_Angeles'))
+            if time.hour < 7:
+                # Don't write anything if it's not earlier than 7am
+                times = None
+            else:
+                # Add 24-hour timestamp (PST).
+                times['time'] = time.strftime('%H:%M:%S')
 
         return times
 
@@ -107,16 +112,18 @@ class Park():
     def write_wait_times(self, current_wait_times=None):
         # Get today's date. Will make a new file every day.
         file_name = 'data/' + datetime.now(timezone('America/Los_Angeles')).strftime('%m-%d-%Y') + '.json'
-        data = open(file_name, 'a')
         if not current_wait_times:
             current_wait_times = self.get_wait_times()
 
         # If the park is open.
-        if len(current_wait_times) != 0:
+        if current_wait_times and len(current_wait_times) != 0:
+            data = open(file_name, 'a')
+
             json.dump(current_wait_times, data)
             data.write(',')
 
-        data.close()
+            data.close()
+
 
 
     def read_wait_times(self, data_file):
