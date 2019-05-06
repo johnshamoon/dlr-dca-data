@@ -24,47 +24,100 @@ def get_headers():
     if time_of_expire == None or (datetime.now() > time_of_expire):
         access_token, expires_in = authentication()
         time_of_expire = datetime.now() + timedelta(seconds=(expires_in-10))
-    headers = {"Authorization":"BEARER {}".format(access_token)}
+    headers = {"Authorization": "BEARER {}".format(access_token)}
     return headers
 
 
 class Park():
     DLR_ID = "330339"
     DCA_ID = "336894"
+    _RIDES = [
+        "Astro Orbitor",
+        "Autopia",
+        "Big Thunder Mountain Railroad",
+        "Casey Jr. Circus Train",
+        "Disneyland Monorail",
+        "Disneyland Railroad",
+        "Dumbo the Flying Elephant",
+        "Walt Disney's Enchanted Tiki Room",
+        "Gadget's Go Coaster",
+        "Haunted Mansion",
+        "Jungle Cruise",
+        "King Arthur Carrousel",
+        "Matterhorn Bobsleds",
+        "Mickey's House and Meet Mickey",
+        "Pinocchio's Daring Journey",
+        "Roger Rabbit's Car Toon Spin",
+        "Snow White's Scary Adventures",
+        "Space Mountain",
+        "Splash Mountain",
+        "Storybook Land Canal Boats",
+        "The Many Adventures of Winnie the Pooh",
+        "\"it's a small world\"",
+        "Alice in Wonderland",
+        "Meet Disney Princesses at Royal Hall",
+        "Buzz Lightyear Astro Blasters",
+        "Indiana Jones Adventure",
+        "Mad Tea Party",
+        "Mr. Toad's Wild Ride",
+        "Peter Pan's Flight",
+        "Pirates of the Caribbean",
+        "Star Tours- The Adventures Continue"
+    ]
+    _LANDS = {
+        'Tomorrowland': [
+            'Astro Orbitor',
+            'Autopia',
+            'Buzz Lightyear Astro Blasters',
+            'Disneyland Monorail',
+            'Finding Nemo Submarine Voyage',
+            'Space Mountain',
+            'Star Tours- The Adventures Continue',
+        ],
+        'Fantasyland': [
+            'Alice in Wonderland',
+            'Casey Jr. Circus Train',
+            'Dumbo the Flying Elephant',
+            '"it\'s a small world"',
+            'King Arthur Carrousel',
+            'Mad Tea Party',
+            'Matterhorn Bobsleds',
+            'Mr. Toad\'s Wild Ride',
+            'Peter Pan\'s Flight',
+            'Pinocchio\'s Daring Journey',
+            'Snow White\'s Scary Adventures',
+            'Storybook Land Canal Boats'
+        ],
+        'Frontierland': [
+            'Big Thunder Mountain Railroad'
+        ],
+        'Adventureland': [
+            'Indiana Jones Adventure',
+            'Jungle Cruise',
+            'Walt Disney\'s Enchanted Tiki Room'
+        ],
+        'New Orleans Square': [
+            'Haunted Mansion',
+            'Pirates of the Caribbean'
+        ],
+        'Critter Country': [
+            'Splash Mountain',
+            'The Many Adventures of Winnie the Pooh'
+        ],
+        'Toon Town': [
+            'Gadget\'s Go Coaster',
+            'Roger Rabbit\'s Car Toon Spin',
+        ],
+        'Misc': [
+            'Disneyland Railroad',
+            'Meet Disney Princesses at Royal Hall',
+            'Mickey\'s House and Meet Mickey',
+        ]
+    }
+
 
     def __init__(self, park_id=DLR_ID):
         self._id = park_id
-        self._rides = ["Astro Orbitor",
-                       "Autopia",
-                       "Big Thunder Mountain Railroad",
-                       "Casey Jr. Circus Train",
-                       "Disneyland Monorail",
-                       "Disneyland Railroad",
-                       "Dumbo the Flying Elephant",
-                       "Walt Disney's Enchanted Tiki Room",
-                       "Gadget's Go Coaster",
-                       "Haunted Mansion",
-                       "Jungle Cruise",
-                       "King Arthur Carrousel",
-                       "Matterhorn Bobsleds",
-                       "Mickey's House and Meet Mickey",
-                       "Pinocchio's Daring Journey",
-                       "Roger Rabbit's Car Toon Spin",
-                       "Snow White's Scary Adventures",
-                       "Space Mountain",
-                        "Splash Mountain",
-                       "Storybook Land Canal Boats",
-                       "The Many Adventures of Winnie the Pooh",
-                       "\"it's a small world\"",
-                       "Alice in Wonderland",
-                       "Meet Disney Princesses at Royal Hall",
-                       "Buzz Lightyear Astro Blasters",
-                       "Indiana Jones Adventure",
-                       "Mad Tea Party",
-                       "Mr. Toad's Wild Ride",
-                       "Peter Pan's Flight",
-                       "Pirates of the Caribbean",
-                       "Star Tours- The Adventures Continue"]
 
         # Unused Park Data (for now).
         self._data = None
@@ -87,14 +140,15 @@ class Park():
         # If the park is open.
         if len(times) != 0:
             for key, _ in times.items():
-                # Replace unicode in key.
+                # Remove unicode in key.
                 if '\u00a0' in key:
                     old_key = key
                     key = key.replace('\u00a0', '')
+                    # Use the new key, but keep the old value.
                     times[key] = times.pop(old_key)
 
-            for i in range(len(self._rides)):
-                ride = self._rides[i]
+            for i in range(len(self._RIDES)):
+                ride = self._RIDES[i]
                 if ride not in times.keys():
                     times[ride] = 0
 
@@ -125,7 +179,6 @@ class Park():
             data.close()
 
 
-
     def read_wait_times(self, data_file):
         try:
             data = open(data_file, 'r').read()
@@ -152,6 +205,48 @@ class Park():
         # Outside bottom right.
         plt.legend(loc=(1.04, 0))
         plt.show()
+
+
+    def graph_by_land(self, data_file):
+        data = self.read_wait_times(data_file)
+        df = pd.DataFrame(data)
+
+        for key in self._LANDS.keys():
+            nrows = 1
+            ncols = 3
+            if len(self._LANDS[key]) == 1:
+                ncols = 1
+                height = 4
+                width = 4
+            elif len(self._LANDS[key]) <= ncols:
+                height = 4
+                width = ncols * 4
+            else:
+                nrows = int((len(self._LANDS[key])) / ncols) + 1
+                height = nrows * 4
+                width = ncols * 4
+
+            ax = df.plot(x='time',
+                         y=self._LANDS[key],
+                         figsize=(width, height),
+                         subplots=True,
+                         layout=(nrows, ncols),
+                         title=self._LANDS[key],
+                         legend=False,
+                         grid=True,
+                         sharex=False)
+
+            for axes in ax:
+                for axis in axes:
+                    plt.setp(axis.get_xticklabels(), rotation=30, visible=True)
+                    axis.set_xlabel('Time of Day')
+                    axis.set_ylabel('Wait Time')
+
+            fig = plt.gcf()
+            fig.suptitle(key, y=1.05, fontsize=16)
+            plt.tight_layout()
+            plt.subplots_adjust(hspace=0.5)
+            plt.show()
 
 
 if __name__ == '__main__':
